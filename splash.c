@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void nameTime() {
+void splash() {
     char current_date[11]; 
     char user_name[50];
     
@@ -24,6 +24,6 @@ void nameTime() {
 }
 
 int main() {
-    nameTime();
+    splash();
     return 0;
 }
