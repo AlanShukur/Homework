@@ -8,7 +8,7 @@
 #define MAX_COUNSEL 6
 #define MAX_RESPONSES 3
 #define NAME_LEN 50
-#define MAX_TEXT 256
+#define MAX_TEXT 1024
 
 // === Data Structures ===
 typedef struct {
@@ -35,6 +35,11 @@ typedef struct {
     int answered;
 } CounselingLog;
 
+typedef struct {
+    char keyword[NAME_LEN];
+    char message[MAX_TEXT];
+} ArthurTrauma;
+
 // === Globals ===
 const char *milliways_nicknames[MAX_TRAINEES] = {
     "Jiyeon", "Ethan", "Suphanan", "Helena", "Karolina", "Liam"
@@ -54,6 +59,11 @@ CounselingQuestion questionBank[5] = {
     {5, "What kind of support do you think is necessary to overcome this trauma?"}
 };
 
+ArthurTrauma arthur = {
+    "specter",
+    "I confess. After graduating from university, I was blinded by the arrogance of starting a startup and recklessly blocked my friends' paths. I painfully learned that when I am the only one convinced by my idea, it leads to disastrous results. The past Arthur was a ghost of dogmatism and stubbornness."
+};
+
 // === Function Prototypes ===
 int parseIntMember(const char *nickname);
 int getRandomAbility();
@@ -65,6 +75,9 @@ void inputTrauma();
 void startCounselingSession();
 void viewCounselingResults();
 void handleSelfManagementMenu();
+void find_easter_egg();
+int isRightChar(char userChar, char binaryChar);
+int isEasterEgg(const char *input);
 
 // === Main ===
 int main(void) {
@@ -75,19 +88,20 @@ int main(void) {
 
 // === Menu ===
 void handleSelfManagementMenu() {
-    char option[10];
+    char option[50];
     while (1) {
         printf("\n[II. Training > 2. Self-Management and Teamwork]\n");
-        printf("A. Mentoring\nB. Trauma Management\n0. Quit\n> ");
+        printf("A. Mentoring\nB. Trauma Management\nEnter name or 0 to Quit\n> ");
         fgets(option, sizeof(option), stdin);
+        option[strcspn(option, "\n")] = '\0';
 
-        if (option[0] == '0') break;
-        else if (option[0] == 'A') {
+        if (strcmp(option, "0") == 0) break;
+        else if (strcmp(option, "A") == 0 || strcmp(option, "a") == 0) {
             initTrainees();
             inputMentors();
             matchMentoring();
             printMatches();
-        } else if (option[0] == 'B') {
+        } else if (strcmp(option, "B") == 0 || strcmp(option, "b") == 0) {
             char sub[10];
             while (1) {
                 printf("\n[Trauma Management]\n1. Input Trauma\n2. Start Counseling\n3. View Results\n0. Back\n> ");
@@ -98,27 +112,26 @@ void handleSelfManagementMenu() {
                 else if (sub[0] == '3') viewCounselingResults();
                 else printf("Invalid choice.\n");
             }
+        } else if (strcmp(option, "Arthur") == 0) {
+            find_easter_egg();
         } else {
-            printf("Invalid option.\n");
+            printf("Invalid input.\n");
         }
     }
 }
 
-// === Trainee ASCII Sum ===
+// === Trainee Functions ===
 int parseIntMember(const char *nickname) {
     int sum = 0;
-    for (int i = 0; nickname[i] != '\0'; i++) {
+    for (int i = 0; nickname[i] != '\0'; i++)
         sum += (int)nickname[i];
-    }
     return sum;
 }
 
-// === Random Ability Generator ===
 int getRandomAbility() {
     return (rand() % 901) + 100;
 }
 
-// === Trainee Initialization ===
 void initTrainees() {
     srand((unsigned int)time(NULL));
     for (int i = 0; i < MAX_TRAINEES; i++) {
@@ -127,7 +140,6 @@ void initTrainees() {
     }
 }
 
-// === Mentor Input ===
 void inputMentors() {
     char buffer[NAME_LEN];
     mentorCount = 0;
@@ -136,9 +148,7 @@ void inputMentors() {
         printf("Mentor %d name (blank to stop): ", i + 1);
         fgets(buffer, sizeof(buffer), stdin);
         buffer[strcspn(buffer, "\n")] = '\0';
-
         if (strlen(buffer) == 0) break;
-
         mentors[i].id = i + 1;
         strncpy(mentors[i].name, buffer, NAME_LEN);
         mentors[i].menteeIndex = -1;
@@ -146,10 +156,8 @@ void inputMentors() {
     }
 }
 
-// === Matching Mentors to Trainees (1:1) ===
 void matchMentoring() {
     int used[MAX_MENTORS] = {0};
-
     for (int i = 0; i < MAX_TRAINEES; i++) {
         int index = trainees[i][0] % mentorCount;
         int attempts = 0;
@@ -164,7 +172,6 @@ void matchMentoring() {
     }
 }
 
-// === Print Mentor Matches ===
 void printMatches() {
     printf("\n======= Mentoring Matches =======\n");
     for (int i = 0; i < mentorCount; i++) {
@@ -180,7 +187,7 @@ void printMatches() {
     printf("=================================\n");
 }
 
-// === Input Trauma Info ===
+// === Trauma & Counseling ===
 void inputTrauma() {
     char name[NAME_LEN], desc[MAX_TEXT];
     while (1) {
@@ -206,7 +213,6 @@ void inputTrauma() {
     }
 }
 
-// === Start Counseling Session ===
 void startCounselingSession() {
     char name[NAME_LEN];
     printf("\nAvailable members for counseling:\n");
@@ -261,7 +267,6 @@ void startCounselingSession() {
     printf("Counseling session completed for %s.\n", name);
 }
 
-// === View Results ===
 void viewCounselingResults() {
     char name[NAME_LEN];
     printf("\nCompleted sessions:\n");
@@ -293,4 +298,38 @@ void viewCounselingResults() {
             printf("Q: %s\nA: %s\n", counselingLogs[index][j].question, counselingLogs[index][j].response);
         }
     }
+}
+
+// === Easter Egg ===
+void find_easter_egg() {
+    printf("\n<<Arthur's Easter Egg>>\n");
+    int len = strlen(arthur.keyword);
+    char reversed[NAME_LEN];
+    char input[NAME_LEN];
+    for (int i = 0; i < len; i++) {
+        unsigned char c = arthur.keyword[len - 1 - i];
+        reversed[i] = c;
+        printf("Char %d binary: ", i + 1);
+        for (int j = 7; j >= 0; j--)
+            printf("%d", (c >> j) & 1);
+        printf("\n");
+    }
+
+    printf("Enter the characters from above in order: ");
+    fgets(input, sizeof(input), stdin);
+    input[strcspn(input, "\n")] = '\0';
+
+    if (isEasterEgg(input)) {
+        printf("##Easter Egg Discovered!$$\n%s\n", arthur.message);
+    } else {
+        printf("Incorrect. Returning to menu.\n");
+    }
+}
+
+int isRightChar(char userChar, char binaryChar) {
+    return (int)userChar == (int)binaryChar;
+}
+
+int isEasterEgg(const char *input) {
+    return strcmp(input, arthur.keyword) == 0;
 }
